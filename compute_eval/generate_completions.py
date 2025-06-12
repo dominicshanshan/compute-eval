@@ -83,6 +83,7 @@ def generate_model_completions(
             ),
             "claude-sonnet-3.5": lambda: ClaudeModel("claude-3-5-sonnet-20241022"),
             "deepseek-r1-0528": lambda: NimModel("deepseek-ai/deepseek-r1-0528"),
+            "deepseek-r1": lambda: NimModel("deepseek-ai/deepseek-r1"),
             "llama-3.1-nemotron-ultra-253b-v1": lambda: NimModel(
                 "nvidia/llama-3.1-nemotron-ultra-253b-v1"
             ),
