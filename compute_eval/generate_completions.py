@@ -89,6 +89,9 @@ def generate_model_completions(
             ),
             "qwq-32b": lambda: NimModel("qwen/qwq-32b"),
             "qwen3-235b-a22b": lambda: NimModel("qwen/qwen3-235b-a22b"),
+            "deepseek-r1-distill-qwen-32b": lambda: NimModel(
+                "deepseek-ai/deepseek-r1-distill-qwen-32b"
+            ),
         }
 
         assert model in model_map, f"Unsupported model: {model}"
@@ -100,7 +103,14 @@ def generate_model_completions(
         model_instance = model_instance_factory()
 
     prompt = generate_user_prompt(problem, include_header_files=include_header_files)
-    completion = model_instance.generate_response(system_prompt, prompt, params)
+    
+    # Special handling for deepseek-r1: combine system_prompt + user_prompt
+    # deepseek-r1 model do not support system_prompt and suggest add it to user_prompt
+    if model == "deepseek-r1":
+        prompt = system_prompt + "\n\n" + prompt
+        completion = model_instance.generate_response(None, prompt, params)
+    else:
+        completion = model_instance.generate_response(system_prompt, prompt, params)
 
     cuda_version = problem.get("cuda_version")
 
