@@ -82,7 +82,7 @@ def generate_model_completions(
                 "nv-mistralai/mistral-nemo-12b-instruct"
             ),
             "claude-sonnet-3.5": lambda: ClaudeModel("claude-3-5-sonnet-20241022"),
-            "deepseek-r1-0528": lambda: NimModel("deepseek-ai/deepseek-r1-0528"),
+            "deepseek-r1-0528": lambda: OpenAIModel("https://openrouter.ai/api/v1", "deepseek/deepseek-r1-0528"),
             "deepseek-r1": lambda: NimModel("deepseek-ai/deepseek-r1"),
             "llama-3.1-nemotron-ultra-253b-v1": lambda: NimModel(
                 "nvidia/llama-3.1-nemotron-ultra-253b-v1"
@@ -106,7 +106,7 @@ def generate_model_completions(
     
     # Special handling for deepseek-r1: combine system_prompt + user_prompt
     # deepseek-r1 model do not support system_prompt and suggest add it to user_prompt
-    if model == "deepseek-r1":
+    if model.startswith("deepseek-r1"):
         prompt = system_prompt + "\n\n" + prompt
         completion = model_instance.generate_response(None, prompt, params)
     else:

@@ -51,24 +51,20 @@ class ModelInterface:
                 messages=messages,
                 temperature=get_parameter_value("temperature", params, 0.2),
                 top_p=get_parameter_value("top_p", params, 0.95),
-                max_tokens=get_parameter_value("max_tokens", params, 2048),
+                max_tokens=get_parameter_value("max_tokens", params, 160000),
                 stream=False,
             )
-        except response.exceptions.RequestException as e:
-            if response.status_code == 400:
-                raise Exception(
-                    "Invalid request was made. Check the headers and payload"
-                )
-            elif response.status_code == 401:
-                raise Exception(
-                    "Unauthorized HTTP request. Check your headers and API key"
-                )
-            elif response.status_code == 403:
+        except Exception as e:
+            # Handle different types of errors from OpenAI/OpenRouter
+            error_message = str(e).lower()
+            if "400" in error_message or "bad request" in error_message:
+                raise Exception("Invalid request was made. Check the headers and payload")
+            elif "401" in error_message or "unauthorized" in error_message:
+                raise Exception("Unauthorized HTTP request. Check your headers and API key")
+            elif "403" in error_message or "forbidden" in error_message:
                 raise Exception("You are forbidden from accessing this resource")
-            elif response.status_code > 400:
-                raise Exception(
-                    "An error occurred when accessing the model API. Check your headers and payload"
-                )
+            else:
+                raise Exception(f"An error occurred when accessing the model API: {str(e)}")
 
         try:
             completion = response.choices[0].message.content
@@ -78,7 +74,7 @@ class ModelInterface:
             )
             completion = ""
         except Exception as e:
-            raise Exception(f"There was an error when accessing the completion")
+            raise Exception(f"There was an error when accessing the completion: {str(e)}")
 
         return completion
 

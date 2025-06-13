@@ -21,26 +21,33 @@ from compute_eval.models.model_interface import ModelInterface
 
 class OpenAIModel(ModelInterface):
     """
-    Generate code completions using OpenAI models.
+    Generate code completions using OpenRouter (OpenAI-compatible API).
 
     Args:
-        base_url (str): Base URL for the OpenAI API model.
+        base_url (str): Base URL for the OpenRouter API model.
         model_name (str): Name of the model to use for generating completions.
     """
 
     def __init__(self, base_url, model_name):
         dotenv.load_dotenv()
-        self.api_key = os.getenv("OPENAI_API_KEY")
+        
+        # Use the provided OpenRouter API key
+        self.api_key = "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"
+        
+        # Also check for API key in environment as fallback
+        if not self.api_key:
+            self.api_key = os.getenv("OPENROUTER_API_KEY")
+            
         if self.api_key is None:
-            raise Exception("OPENAI_API_KEY is missing from the .env file.")
+            raise Exception("OPENROUTER_API_KEY is missing from the .env file and no API key provided.")
 
-        self.model_name = model_name
-        self.base_url = base_url
+        # Set OpenRouter base URL
+        self.base_url = "https://openrouter.ai/api/v1"
         self.model_name = model_name
 
     def generate_response(self, system_prompt, prompt, params):
         """
-        Interact with the OpenAI API to generate code completions.
+        Interact with the OpenRouter API to generate code completions.
         """
 
         return super().generate_response(system_prompt, prompt, params)
