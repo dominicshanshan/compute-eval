@@ -55,7 +55,7 @@ class ModelInterface:
     def _call_openrouter_api(self, messages, params):
         """Call OpenRouter API directly using requests library."""
         headers = {
-            "Authorization": f"Bearer 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",
+            "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
         }
         
@@ -64,7 +64,7 @@ class ModelInterface:
             "messages": messages,
             "temperature": get_parameter_value("temperature", params, 0.2),
             "top_p": get_parameter_value("top_p", params, 0.95),
-            "max_tokens": get_parameter_value("max_tokens", params, 160000),
+            "max_tokens": get_parameter_value("max_tokens", params, 100000),
             "stream": False
         }
 
@@ -73,6 +73,7 @@ class ModelInterface:
         print(f"DEBUG: Model: {self.model_name}")
         print(f"DEBUG: Headers: {headers}")
         print(f"DEBUG: Data: {json.dumps(data, indent=2)}")
+        print(f"DEBUG: Temperature: {data['temperature']}, Top-p: {data['top_p']}, Max tokens: {data['max_tokens']}")
 
         try:
             response = requests.post(
@@ -87,20 +88,36 @@ class ModelInterface:
                 print(f"DEBUG: Response text: {response.text}")
             
             response.raise_for_status()
-            result = response.json()
+            
+            try:
+                result = response.json()
+            except json.JSONDecodeError as e:
+                print(f"DEBUG: Failed to parse JSON response. Error at position {e.pos}")
+                print(f"DEBUG: Response size: {len(response.text)} characters")
+                # Show area around error
+                start = max(0, e.pos - 100)
+                end = min(len(response.text), e.pos + 100)
+                print(f"DEBUG: Response around error: ...{response.text[start:end]}...")
+                raise Exception(f"Invalid JSON response from API: {str(e)}")
             
             completion = result["choices"][0]["message"]["content"]
+            print(f"DEBUG: Successfully extracted completion of length: {len(completion)}")
             return completion
             
         except requests.exceptions.HTTPError as e:
-            if response.status_code == 400:
+            status_code = getattr(e.response, 'status_code', None) if hasattr(e, 'response') else None
+            if status_code == 400:
                 raise Exception("Invalid request was made. Check the headers and payload")
-            elif response.status_code == 401:
+            elif status_code == 401:
                 raise Exception("Unauthorized HTTP request. Check your headers and API key")
-            elif response.status_code == 403:
+            elif status_code == 403:
                 raise Exception("You are forbidden from accessing this resource")
             else:
                 raise Exception(f"An error occurred when accessing the OpenRouter API: {str(e)}")
+        except requests.exceptions.Timeout:
+            raise Exception("Request timed out after 120 seconds")
+        except requests.exceptions.RequestException as e:
+            raise Exception(f"Network error when accessing the API: {str(e)}")
         except Exception as e:
             raise Exception(f"An error occurred when accessing the model API: {str(e)}")
 
@@ -114,7 +131,8 @@ class ModelInterface:
                 messages=messages,
                 temperature=get_parameter_value("temperature", params, 0.2),
                 top_p=get_parameter_value("top_p", params, 0.95),
-                max_tokens=get_parameter_value("max_tokens", params, 160000),
+                # Change this value based on model parameters (e.g. 160000 for deepseek-r1)
+                max_tokens=get_parameter_value("max_tokens", params, 100000),
                 stream=False,
             )
         except Exception as e:

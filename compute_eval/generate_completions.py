@@ -106,7 +106,7 @@ def generate_model_completions(
     
     # Special handling for deepseek-r1: combine system_prompt + user_prompt
     # deepseek-r1 model do not support system_prompt and suggest add it to user_prompt
-    if model.startswith("deepseek-r1"):
+    if model and model.startswith("deepseek-r1"):
         prompt = system_prompt + "\n\n" + prompt
         completion = model_instance.generate_response(None, prompt, params)
     else:

@@ -31,19 +31,20 @@ class OpenAIModel(ModelInterface):
     def __init__(self, base_url, model_name):
         dotenv.load_dotenv()
         
-        # Use the provided OpenRouter API key
-        self.api_key = "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"
-        
-        # Also check for API key in environment as fallback
+        # Check for API key in environment
+        self.api_key = os.getenv("OPENROUTER_API_KEY")
+           
         if not self.api_key:
-            self.api_key = os.getenv("OPENROUTER_API_KEY")
-            
-        if self.api_key is None:
-            raise Exception("OPENROUTER_API_KEY is missing from the .env file and no API key provided.")
+            raise Exception(
+                "API key not found. Please set OPENROUTER_API_KEY environment variable."
+            )
 
-        # Set OpenRouter base URL
+        # Set OpenRouter base URL (ignore the passed base_url for OpenRouter models)
         self.base_url = "https://openrouter.ai/api/v1"
         self.model_name = model_name
+        
+        print(f"DEBUG: Initialized OpenAIModel with model: {model_name}")
+        print(f"DEBUG: Using API key starting with: {self.api_key[:20]}...")
 
     def generate_response(self, system_prompt, prompt, params):
         """

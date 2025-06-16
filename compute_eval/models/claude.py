@@ -23,7 +23,7 @@ from compute_eval.models.model_interface import ModelInterface, get_parameter_va
 
 class ClaudeModel(ModelInterface):
     """
-    Generate code completions using Clade models.
+    Generate code completions using Claude models.
 
     Args:
         base_url (str): Base URL for the OpenAI API model.
