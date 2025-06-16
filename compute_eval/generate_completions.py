@@ -242,7 +242,8 @@ def generate_samples(
                 futures.append(future)
 
         print("Waiting for all the model completions")
-        for future in tqdm.tqdm(as_completed(futures), total=len(futures)):
+        # for future in tqdm.tqdm(as_completed(futures), total=len(futures)):
+        for future in as_completed(futures):
             result = future.result()
             results.append(
                 {

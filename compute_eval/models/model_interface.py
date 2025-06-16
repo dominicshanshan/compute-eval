@@ -69,11 +69,7 @@ class ModelInterface:
         }
 
         # Debug prints
-        print(f"DEBUG: API Key: {self.api_key[:20]}...")
-        print(f"DEBUG: Model: {self.model_name}")
-        print(f"DEBUG: Headers: {headers}")
         print(f"DEBUG: Data: {json.dumps(data, indent=2)}")
-        print(f"DEBUG: Temperature: {data['temperature']}, Top-p: {data['top_p']}, Max tokens: {data['max_tokens']}")
 
         try:
             response = requests.post(
