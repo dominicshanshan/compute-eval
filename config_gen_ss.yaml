@@ -1,7 +1,7 @@
 problem_file: data/cuda_problems_033125.jsonl
-sample_file: gen_sample_output/deepseek_r1_0528_samples.jsonl
+sample_file: gen_sample_output/deepseek_r1_free_samples.jsonl
 
-model: deepseek-r1-0528
-num_samples_per_problem: 2
-n_workers: 1
+model: deepseek-r1-free
+num_samples_per_problem: 3
+n_workers: 3
 print_completions: True
