@@ -16,6 +16,8 @@
 from openai import OpenAI
 import requests
 import json
+import os
+import time
 
 
 class ModelInterface:
@@ -87,6 +89,9 @@ class ModelInterface:
             
             try:
                 result = response.json()
+                completion = result["choices"][0]["message"]["content"]
+                print(f"DEBUG: Successfully extracted completion of length: {len(completion)}")
+                return completion
             except json.JSONDecodeError as e:
                 print(f"DEBUG: Failed to parse JSON response. Error at position {e.pos}")
                 print(f"DEBUG: Response size: {len(response.text)} characters")
@@ -94,11 +99,110 @@ class ModelInterface:
                 start = max(0, e.pos - 100)
                 end = min(len(response.text), e.pos + 100)
                 print(f"DEBUG: Response around error: ...{response.text[start:end]}...")
+                
+                # Save raw response for debugging
+                debug_dir = "debug_responses"
+                if not os.path.exists(debug_dir):
+                    os.makedirs(debug_dir)
+                
+                timestamp = int(time.time())
+                debug_file = os.path.join(debug_dir, f"response_{timestamp}.log")
+                with open(debug_file, 'w') as f:
+                    f.write(response.text)
+                print(f"DEBUG: Saved raw response to {debug_file}")
+                
+                # Try to extract content from raw response
+                print("DEBUG: Attempting to extract content from raw response...")
+                raw_text = response.text
+                
+                # Pattern 1: Look for content after "content":" - This is the primary method for truncated responses
+                content_start = raw_text.find('"content":"')
+                if content_start != -1:
+                    content_start += len('"content":"')
+                    # For truncated responses, we might not find a closing quote
+                    # So we'll extract everything from content_start to the end or until we find a closing quote
+                    content_end = content_start
+                    escape_next = False
+                    found_closing_quote = False
+                    
+                    while content_end < len(raw_text):
+                        if escape_next:
+                            escape_next = False
+                        elif raw_text[content_end] == '\\':
+                            escape_next = True
+                        elif raw_text[content_end] == '"' and not escape_next:
+                            found_closing_quote = True
+                            break
+                        content_end += 1
+                    
+                    # If we didn't find a closing quote, it's likely truncated
+                    if not found_closing_quote:
+                        content_end = len(raw_text)
+                        print(f"DEBUG: Response appears to be truncated, extracting partial content")
+                    
+                    extracted_content = raw_text[content_start:content_end]
+                    
+                    # Try to unescape the content
+                    try:
+                        # For truncated content, we need to handle it differently
+                        if not found_closing_quote:
+                            # Just return the raw extracted content for truncated responses
+                            # Remove any trailing incomplete escape sequences
+                            if extracted_content.endswith('\\') and len(extracted_content) > 1:
+                                extracted_content = extracted_content[:-1]
+                            # Basic unescaping for common sequences
+                            extracted_content = extracted_content.replace('\\n', '\n')
+                            extracted_content = extracted_content.replace('\\"', '"')
+                            extracted_content = extracted_content.replace('\\\\', '\\')
+                            print(f"DEBUG: Successfully extracted truncated content of length: {len(extracted_content)}")
+                            return extracted_content
+                        else:
+                            # For complete content, use JSON parsing
+                            extracted_content = json.loads('"' + extracted_content + '"')
+                            print(f"DEBUG: Successfully extracted complete content of length: {len(extracted_content)}")
+                            return extracted_content
+                    except Exception as ex:
+                        print(f"DEBUG: Failed to process extracted content: {str(ex)}")
+                        # If JSON parsing fails, try basic unescaping
+                        extracted_content = extracted_content.replace('\\n', '\n')
+                        extracted_content = extracted_content.replace('\\"', '"')
+                        extracted_content = extracted_content.replace('\\\\', '\\')
+                        if extracted_content:
+                            print(f"DEBUG: Returning partially processed content of length: {len(extracted_content)}")
+                            return extracted_content
+                
+                # Pattern 2: Try to fix common JSON issues (secondary method, less likely to help with truncated responses)
+                # This is kept as a fallback but won't help much with truncated content
+                print("DEBUG: Content extraction failed, trying JSON repair...")
+                fixed_text = raw_text
+                import re
+                
+                # If the response is truncated, try to close open structures
+                if e.pos >= len(raw_text) - 10:  # Error near the end suggests truncation
+                    # Count open braces/brackets
+                    open_braces = fixed_text.count('{') - fixed_text.count('}')
+                    open_brackets = fixed_text.count('[') - fixed_text.count(']')
+                    
+                    # Add closing characters
+                    fixed_text += '"' * (1 if fixed_text.count('"') % 2 == 1 else 0)
+                    fixed_text += '}' * open_braces
+                    fixed_text += ']' * open_brackets
+                    print(f"DEBUG: Added closing characters to potentially truncated JSON")
+                
+                # Remove trailing commas
+                fixed_text = re.sub(r',\s*}', '}', fixed_text)
+                fixed_text = re.sub(r',\s*]', ']', fixed_text)
+                
+                try:
+                    result = json.loads(fixed_text)
+                    completion = result["choices"][0]["message"]["content"]
+                    print(f"DEBUG: Successfully extracted completion after fixing JSON: {len(completion)}")
+                    return completion
+                except:
+                    print("DEBUG: JSON repair failed")
+                
+                # If all else fails, raise the original exception
                 raise Exception(f"Invalid JSON response from API: {str(e)}")
-            
-            completion = result["choices"][0]["message"]["content"]
-            print(f"DEBUG: Successfully extracted completion of length: {len(completion)}")
-            return completion
             
         except requests.exceptions.HTTPError as e:
             status_code = getattr(e.response, 'status_code', None) if hasattr(e, 'response') else None
