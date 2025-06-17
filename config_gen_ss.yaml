@@ -5,3 +5,4 @@ model: deepseek-r1-free
 num_samples_per_problem: 1
 n_workers: 1
 print_completions: True
+resume: True

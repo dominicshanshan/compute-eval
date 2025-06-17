@@ -15,6 +15,8 @@
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Optional
+import threading
+import os
 
 import tqdm
 
@@ -210,23 +212,52 @@ def generate_samples(
     model_type: Optional[str] = "instruct",
     custom_model: Optional[dict] = None,
     params: Optional[dict] = None,
+    resume: bool = False,
 ):
     """Generates `n_samples_per_problem` number of completions for each of the problems in the
     problem file and then writes them out to the samples.jsonl file provided.
+    
+    Args (added by shanshan):
+        resume (bool): If True, will check existing results and skip already completed tasks.
     """
 
     # the number of samples generated per problem must be at least as much as the most k for pass k
     problems = read_problems(problem_file)
 
+    # Check existing results if resume is enabled
+    existing_results = {}
+    if resume and os.path.exists(sample_file):
+        print(f"Resume mode: checking existing results in {sample_file}")
+        from .data import stream_jsonl
+        for result in stream_jsonl(sample_file):
+            task_id = result.get("task_id", "")
+            if task_id not in existing_results:
+                existing_results[task_id] = 0
+            existing_results[task_id] += 1
+        print(f"Found {sum(existing_results.values())} existing results for {len(existing_results)} tasks")
+    else:
+        # Clear/create the output file at the beginning
+        with open(sample_file, "w") as f:
+            pass  # Just create/clear the file
+    
+    # Create a lock for thread-safe file writes
+    write_lock = threading.Lock()
+    
     print("Started generating the model completions")
     with ThreadPoolExecutor(max_workers=n_workers) as executor:
         futures = []
-        # results is the list of dictionaries that will be serialized into the final JSONL file
-        results = []
 
         # for each problem, generate `num_samples` completions using the thread pool futures
         for task_id, problem in problems.items():
-            for _ in range(num_samples_per_problem):
+            # Skip already completed samples if resuming
+            existing_count = existing_results.get(task_id, 0)
+            samples_to_generate = num_samples_per_problem - existing_count
+            
+            if samples_to_generate <= 0:
+                print(f"Skipping {task_id}: already has {existing_count} samples")
+                continue
+                
+            for _ in range(samples_to_generate):
                 args = (
                     task_id,
                     system_prompt,
@@ -241,22 +272,34 @@ def generate_samples(
                 future = executor.submit(generate_model_completions, *args)
                 futures.append(future)
 
-        print("Waiting for all the model completions")
-        # for future in tqdm.tqdm(as_completed(futures), total=len(futures)):
+        if not futures:
+            print("No tasks to process. All samples already generated.")
+            return
+
+        print(f"Processing {len(futures)} model completions (results saved incrementally)")
+        completed_count = 0
+        failed_count = 0
         for future in as_completed(futures):
-            result = future.result()
-            results.append(
-                {
+            try:
+                result = future.result()
+                result_dict = {
                     "task_id": result[0],
                     "compilable_code": result[1],
                     "generated_completion": result[2],
                     "prompt": result[3],
                 }
-            )
+                
+                # Write the result immediately with thread-safe lock
+                with write_lock:
+                    write_jsonl(sample_file, [result_dict], append=True)
+                
+                completed_count += 1
+            except Exception as e:
+                failed_count += 1
+                print(f"Error processing task: {str(e)}")
+                # Continue processing other tasks
+                
+            if (completed_count + failed_count) % 10 == 0:
+                print(f"Progress: {completed_count} completed, {failed_count} failed, {len(futures) - completed_count - failed_count} remaining")
 
-    results = sorted(results, key=lambda x: x["task_id"])
-    print("Writing the samples to the specified output JSONL file")
-    write_jsonl(sample_file, results)
-    print(
-        "Completed generating all the samples for the problems. Written to the samples JSONL file"
-    )
+    print(f"Finished: {completed_count} samples completed successfully, {failed_count} failed. Results saved to {sample_file}")

@@ -78,7 +78,7 @@ class ModelInterface:
                 url="https://openrouter.ai/api/v1/chat/completions",
                 headers=headers,
                 data=json.dumps(data),
-                timeout=120
+                timeout=300
             )
             
             if response.status_code != 200:
@@ -215,7 +215,7 @@ class ModelInterface:
             else:
                 raise Exception(f"An error occurred when accessing the OpenRouter API: {str(e)}")
         except requests.exceptions.Timeout:
-            raise Exception("Request timed out after 120 seconds")
+            raise Exception("Request timed out after 300 seconds")
         except requests.exceptions.RequestException as e:
             raise Exception(f"Network error when accessing the API: {str(e)}")
         except Exception as e:
