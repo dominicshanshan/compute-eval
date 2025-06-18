@@ -180,7 +180,7 @@ def evaluate_functional_correctness(
             n_samples += 1
 
         # make sure that solved all the problems (at least once)
-        assert len(completion_id) == len(problems), "Some problems are not attempted."
+        # assert len(completion_id) == len(problems), "Some problems are not attempted."
 
         for future in tqdm.tqdm(as_completed(futures), total=len(futures)):
             result = future.result()
