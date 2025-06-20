@@ -144,7 +144,7 @@ class ModelInterface:
                 temperature=get_parameter_value("temperature", params, 0.2),
                 top_p=get_parameter_value("top_p", params, 0.95),
                 # Change this value based on model parameters (e.g. 160000 for deepseek-r1)
-                max_tokens=get_parameter_value("max_tokens", params, 100000),
+                max_tokens=get_parameter_value("max_tokens", params, 10000),
                 stream=False,
             )
         except Exception as e:
