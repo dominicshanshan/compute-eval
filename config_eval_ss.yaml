@@ -1,4 +1,4 @@
-sample_file: gen_sample_output/deepseek_r1_0528_free_3samples.jsonl
+sample_file: gen_sample_output/kimi_dev_72b_free_samples.jsonl
 problem_file: data/cuda_problems_033125.jsonl
 
-k: [1,3]
+k: [1]
