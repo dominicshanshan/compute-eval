@@ -92,6 +92,8 @@ def generate_model_completions(
             "qwen3-235b-a22b-free": lambda: OpenAIModel("https://openrouter.ai/api/v1", "qwen/qwen3-235b-a22b:free"),
             "qwen3-32b-free": lambda: OpenAIModel("https://openrouter.ai/api/v1", "qwen/qwen3-32b:free"),
             "qwen3-30b-a3b-free": lambda: OpenAIModel("https://openrouter.ai/api/v1", "qwen/qwen3-30b-a3b:free"),
+            "llama4-maverick-free": lambda: OpenAIModel("https://openrouter.ai/api/v1", "meta-llama/llama-4-maverick:free"),
+            "llama4-scout-free": lambda: OpenAIModel("https://openrouter.ai/api/v1", "meta-llama/llama-4-scout:free"),
             "deepseek-r1": lambda: NimModel("deepseek-ai/deepseek-r1"),
             "llama-3.1-nemotron-ultra-253b-v1": lambda: NimModel(
                 "nvidia/llama-3.1-nemotron-ultra-253b-v1"
