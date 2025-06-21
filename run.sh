@@ -41,5 +41,5 @@ set -e
 # run_with_retry "compute_eval generate_samples -config_file=config_gen_ss.yaml"
 # Set your API key as environment variable
 # export OPENROUTER_API_KEY="<your_api_key_here>"
-compute_eval generate_samples -config_file=config_gen_ss.yaml
-# compute_eval evaluate_functional_correctness -config_file=config_eval_ss.yaml --allow-execution
+# compute_eval generate_samples -config_file=config_gen_ss.yaml
+compute_eval evaluate_functional_correctness -config_file=config_eval_ss.yaml --allow-execution
