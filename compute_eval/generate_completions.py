@@ -93,6 +93,7 @@ def generate_model_completions(
             "llama4-maverick-free": lambda: OpenAIModel("https://openrouter.ai/api/v1", "meta-llama/llama-4-maverick:free"),
             "llama4-scout-free": lambda: OpenAIModel("https://openrouter.ai/api/v1", "meta-llama/llama-4-scout:free"),
             "deepseek-v3-0324-free": lambda: OpenAIModel("https://openrouter.ai/api/v1", "deepseek/deepseek-chat-v3-0324:free"),
+            "kimi-k2-free": lambda: OpenAIModel("https://openrouter.ai/api/v1", "moonshotai/kimi-k2:free"),
             "deepseek-r1": lambda: NimModel("deepseek-ai/deepseek-r1"),
             "llama-3.1-nemotron-ultra-253b-v1": lambda: NimModel(
                 "nvidia/llama-3.1-nemotron-ultra-253b-v1"

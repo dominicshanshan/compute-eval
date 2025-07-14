@@ -1,4 +1,4 @@
-sample_file: gen_sample_output/qwen3_14b_free_samples.jsonl
+sample_file: gen_sample_output/kimi_k2_free_samples.jsonl
 problem_file: data/cuda_problems_033125.jsonl
 
 k: [1]
