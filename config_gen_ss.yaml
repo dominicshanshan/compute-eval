@@ -1,7 +1,7 @@
 problem_file: data/cuda_problems_033125.jsonl
-sample_file: gen_sample_output/kimi_k2_free_samples.jsonl
+sample_file: gen_sample_output/kimi_k2_samples.jsonl
 
-model: kimi-k2-free
+model: kimi-k2
 num_samples_per_problem: 1
 n_workers: 1
 print_completions: True
