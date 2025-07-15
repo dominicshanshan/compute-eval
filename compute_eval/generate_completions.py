@@ -51,7 +51,7 @@ def generate_model_completions(
         params (dict, optional): Additional parameters to pass to the model.
 
     Returns:
-        str: runnable code completion, including declaration, completion, and test code.
+        Tuple: (task_id, runnable code completion, parsed completion, prompt, original completion)
     """
 
     # Means we are invoking a model from the preset list of models
@@ -123,6 +123,9 @@ def generate_model_completions(
     else:
         completion = model_instance.generate_response(system_prompt, prompt, params)
 
+    # Store the original completion
+    original_completion = completion
+
     cuda_version = problem.get("cuda_version")
 
     if print_completions:
@@ -152,7 +155,7 @@ def generate_model_completions(
     result = result + "// completion-end \n\n"
     result = result + problem["test"]
 
-    return (task_id, result, completion, prompt)
+    return (task_id, result, completion, prompt, original_completion)
 
 
 def parse_function_body(input_string, drop_signature: bool = True):
@@ -222,12 +225,14 @@ def generate_samples(
     custom_model: Optional[dict] = None,
     params: Optional[dict] = None,
     resume: bool = False,
+    original_completions_file: Optional[str] = None,
 ):
     """Generates `n_samples_per_problem` number of completions for each of the problems in the
     problem file and then writes them out to the samples.jsonl file provided.
     
     Args (added by shanshan):
         resume (bool): If True, will check existing results and skip already completed tasks.
+        original_completions_file (str, optional): If provided, will save original completions to this file
     """
 
     # the number of samples generated per problem must be at least as much as the most k for pass k
@@ -248,6 +253,11 @@ def generate_samples(
         # Clear/create the output file at the beginning
         with open(sample_file, "w") as f:
             pass  # Just create/clear the file
+    
+    # Clear/create the original completions file if specified
+    if original_completions_file:
+        with open(original_completions_file, "w") as f:
+            pass
     
     # Create a lock for thread-safe file writes
     write_lock = threading.Lock()
@@ -301,6 +311,14 @@ def generate_samples(
                 # Write the result immediately with thread-safe lock
                 with write_lock:
                     write_jsonl(sample_file, [result_dict], append=True)
+                    
+                    if original_completions_file:
+                        original_dict = {
+                            "task_id": result[0],
+                            "prompt": result[3],
+                            "completion": result[4],  # Original completion
+                        }
+                        write_jsonl(original_completions_file, [original_dict], append=True)
                 
                 completed_count += 1
             except Exception as e:

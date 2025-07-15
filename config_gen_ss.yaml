@@ -1,7 +1,8 @@
 problem_file: data/cuda_problems_033125.jsonl
-sample_file: gen_sample_output/kimi_k2_samples.jsonl
+sample_file: gen_sample_output/deepseek_r1_free_samples_0715.jsonl
+original_completions_file: gen_sample_output/original_deepseek_r1_completions_0715.jsonl
 
-model: kimi-k2
+model: deepseek-r1-free
 num_samples_per_problem: 1
 n_workers: 1
 print_completions: True
